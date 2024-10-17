@@ -1,4 +1,8 @@
 (* Homework 01*)
+(* Grader Output: 
+    Because the auto-grader gave a score above 80, here is the link to a message from a very cute dog: https://drive.google.com/file/d/0B5sUgbs6aDNpRDlPRHhkdTVEUXM/view?pref=2&pli=1
+
+    With extra credit you received 104.0%!  Grade capped at 100% *)
 
 fun is_older (d1 : (int*int*int), d2 : (int*int*int)) =
     if (#1 d1) = (#1 d2)
