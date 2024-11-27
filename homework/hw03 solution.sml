@@ -1,3 +1,5 @@
+(* Grader Output : 100% 
+	Didn't solve the Challenge Problem; Too much time spent on tryina understand what the goal even is *)
 (* Coursera Programming Languages, Homework 3, Provided Code *)
 
 exception NoAnswer
