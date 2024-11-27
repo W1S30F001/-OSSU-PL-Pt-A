@@ -1,3 +1,4 @@
+(* Grader Outpute: 84% :( , cringe homework, not planning on improving the mark *)
 (* Dan Grossman, Coursera PL, HW2 Provided Code *)
 
 (* if you use this function to compare two strings (returns true if the same
