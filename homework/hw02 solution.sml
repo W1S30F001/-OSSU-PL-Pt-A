@@ -1,4 +1,4 @@
-(* Grader Outpute: 84% :( , cringe homework, not planning on improving the mark *)
+(* Grader Outpute: 101.12% , cringe homework.. *)
 (* Dan Grossman, Coursera PL, HW2 Provided Code *)
 
 (* if you use this function to compare two strings (returns true if the same
@@ -93,9 +93,9 @@ fun card_color c =
 
 fun card_value c =
    case c of
-      (suit, Ace) => 11
-   |  (suit, Num num) => num
-   |  (_, _) =>   10
+      (_, Ace) => 11
+   |  (_, Num num) => num
+   |   _ =>   10
 
 
 (* 2.c El Problemoa Numeroa II.III *)
@@ -106,7 +106,7 @@ fun card_value c =
 
 fun remove_card(cs, c, e) =
    case cs of
-         lastcs::[] => if lastcs = c then [] else raise e
+         [] => raise e
      |   firstcs::restcs => if firstcs = c 
                            then restcs
                            else firstcs::remove_card(restcs, c, e)
@@ -131,7 +131,6 @@ fun sum_cards cs =
    let fun sum_cards_ts(cs, acc) =
       case cs of
          [] => acc
-      |  lastcard::[] => acc + card_value(lastcard)
       |  firstcard::restcards => sum_cards_ts(restcards, acc + card_value(firstcard))
    in sum_cards_ts(cs, 0) end
 
@@ -143,10 +142,12 @@ fun sum_cards cs =
                                  else goal-sum     *)
 
 fun score(cs, goal) =
-   let val sum = sum_cards(cs) in
+   let val sum = sum_cards(cs) 
+       val same_colors = all_same_color cs
+   in
    if sum > goal
-   then 3*(sum-goal)
-   else goal-sum
+   then if not same_colors then 3*(sum-goal) else (3*(sum-goal)) div 2
+   else if not same_colors then goal - sum else (goal-sum) div 2
    end
 
 (* 2.g Problem Num II.VII *)
@@ -160,23 +161,15 @@ fun score(cs, goal) =
                         move list list itself is empty -> stop*)
 fun officiate(loc, lomov, goal) =
    let 
-   fun game_finish(held_cards, goal) =
-      let val game_score = score(held_cards, goal) 
-      in
-      if all_same_color(held_cards) 
-      then game_score div 2 
-      else game_score 
-      end
    fun officiatinate(loc, lomov, held_cards, goal) = 
       case lomov of
-         [] => game_finish(held_cards,goal)
+         [] => score(held_cards,goal)
       |  Discard(c)::restlomov => officiatinate(loc, restlomov, remove_card(held_cards, c, IllegalMove), goal)
       |  Draw::restlomov => case loc of
-                              [] => game_finish(held_cards,goal)
-                           |  lastcard::[] => game_finish(held_cards@[lastcard], goal)
+                              [] => score(held_cards,goal)
                            |  firstcard::restcards => let val try = sum_cards(held_cards@[firstcard]) in 
                                                       if try > goal
-                                                      then try
+                                                      then score(held_cards@[firstcard],goal)
                                                       else officiatinate(restcards, restlomov, held_cards@[firstcard], goal) end
   in  officiatinate(loc, lomov, [], goal) end
 
@@ -188,36 +181,48 @@ fun score_challenge(cs, goal) =
    let fun ace_found(cs) = 
       case cs of
          [] => false
-      |  (_,rank)::[] => rank = Ace
-      |  (_,rank)::restcards => if rank = Ace then true else ace_found(restcards)
-      val sum_default = sum_cards(cs)
-      val sum_target_possibility  = sum_cards(cs) - 10
+      |  (_,rank)::restcards => if rank = Ace then true else ace_found restcards
+      val sum_val11 = sum_cards(cs)
+      val sum_val1  = sum_cards(cs) - 10
+      val score_1 = score (cs, sum_val1) 
+      val score_11 = score (cs, sum_val11)
    in 
    if ace_found(cs) 
-   then if sum_default > sum_target_possibility then sum_target_possibility else sum_default 
-   else if sum_default > goal
-        then 3*(sum_default-goal)
-        else goal-sum_default
+   then if score_1 > score_11 then score_11  else score_1 
+   else score_11
    end
 
 fun officiate_challenge(loc, lomov, goal) =
    let 
-   fun game_finish(held_cards, goal) =
-      let val game_score = score_challenge(held_cards, goal) 
-      in
-      if all_same_color(held_cards) 
-      then game_score div 2 
-      else game_score 
-      end
    fun officiatinate(loc, lomov, held_cards, goal) = 
       case lomov of
-         [] => game_finish(held_cards,goal)
+         [] => score_challenge(held_cards,goal)
       |  Discard(c)::restlomov => officiatinate(loc, restlomov, remove_card(held_cards, c, IllegalMove), goal)
       |  Draw::restlomov => case loc of
-                              [] => game_finish(held_cards,goal)
-                           |  lastcard::[] => game_finish(held_cards@[lastcard], goal)
+                              [] => score_challenge(held_cards,goal)
                            |  firstcard::restcards => let val try = sum_cards(held_cards@[firstcard]) in 
                                                       if try > goal
-                                                      then let val try2 = sum_cards(held_cards) in if try2 <= goal then try2 else try end
+                                                      then score_challenge(held_cards@[firstcard],goal)
                                                       else officiatinate(restcards, restlomov, held_cards@[firstcard], goal) end
   in  officiatinate(loc, lomov, [], goal) end
+
+fun careful_player (card_list, goal) =
+   let fun try_discard held_cards drawn_card =
+      case held_cards of
+      [] =>  Draw
+      | card::rest_held_cards => if score ((rest_held_cards @ [drawn_card]), goal) = 0 then Discard card else try_discard rest_held_cards drawn_card
+   fun gen_move_list card_list goal moves held_cards =
+   case card_list of
+   [] => moves @ [Draw]
+(* if goal > (sum_cards held_cards + 10) then moves @ [Draw] else if score(held_cards, goal) > score((held_cards @ [card]), goal) then moves @ [Draw] else moves *)
+|  card::restcards => if score(held_cards, goal) = 0 
+                                then moves 
+                                else let val cards_value = sum_cards (held_cards @ [card]) 
+                                     in if cards_value > 10 
+                                        then gen_move_list restcards goal moves held_cards 
+                                        else case try_discard held_cards card of Draw => gen_move_list restcards goal (moves @ [Draw]) (held_cards @ [card]) 
+                                                                                 | Discard c => gen_move_list restcards goal (moves @ [Discard c] @ [Draw]) (remove_card(held_cards, c, IllegalMove) @ [card])
+                                     end
+      
+   in gen_move_list card_list goal [] [] end
+
